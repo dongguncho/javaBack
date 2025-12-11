@@ -2,6 +2,7 @@ package com.example.javaback.controller;
 
 import com.example.javaback.dto.ApiResponse;
 import com.example.javaback.entity.User;
+import com.example.javaback.exception.UnauthorizedException;
 import com.example.javaback.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -46,15 +47,27 @@ public class UserController {
     public ResponseEntity<ApiResponse<User>> updateUser(
             @PathVariable String id,
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) String email) {
-        
+            @RequestParam(required = false) String email,
+            @RequestAttribute("user") User currentUser) {
+
+        if (!currentUser.getId().equals(id)) {
+            throw new UnauthorizedException("본인 정보만 수정할 수 있습니다");
+        }
+
         User user = userService.updateUser(id, name, email);
         return ResponseEntity.ok(ApiResponse.success(user, "사용자 정보 수정이 완료되었습니다"));
     }
-    
+
     @DeleteMapping("/{id}")
     @Operation(summary = "사용자 삭제", description = "사용자를 삭제합니다")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @PathVariable String id,
+            @RequestAttribute("user") User currentUser) {
+
+        if (!currentUser.getId().equals(id)) {
+            throw new UnauthorizedException("본인 계정만 삭제할 수 있습니다");
+        }
+
         userService.deleteUser(id);
         return ResponseEntity.ok(ApiResponse.success(null, "사용자 삭제가 완료되었습니다"));
     }

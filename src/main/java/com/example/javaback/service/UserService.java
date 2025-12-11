@@ -1,6 +1,9 @@
 package com.example.javaback.service;
 
 import com.example.javaback.entity.User;
+import com.example.javaback.exception.DuplicateEmailException;
+import com.example.javaback.exception.UnauthorizedException;
+import com.example.javaback.exception.UserNotFoundException;
 import com.example.javaback.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -14,13 +17,13 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional
 public class UserService {
-    
+
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+    private final PasswordEncoder passwordEncoder;
     
     public User createUser(String name, String email, String password) {
         if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("이미 존재하는 이메일입니다");
+            throw new DuplicateEmailException("이미 존재하는 이메일입니다");
         }
         
         User user = new User();
@@ -41,7 +44,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public User findById(String id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+                .orElseThrow(() -> new UserNotFoundException("사용자를 찾을 수 없습니다"));
     }
     
     @Transactional(readOnly = true)
@@ -54,7 +57,7 @@ public class UserService {
         
         if (email != null && !email.equals(user.getEmail())) {
             if (userRepository.existsByEmail(email)) {
-                throw new RuntimeException("이미 사용 중인 이메일입니다");
+                throw new DuplicateEmailException("이미 사용 중인 이메일입니다");
             }
             user.setEmail(email);
         }
@@ -68,11 +71,11 @@ public class UserService {
     
     public void deleteUser(String id) {
         User user = findById(id);
-        
+
         if ("admin@example.com".equals(user.getEmail())) {
-            throw new RuntimeException("관리자 계정은 삭제할 수 없습니다");
+            throw new UnauthorizedException("관리자 계정은 삭제할 수 없습니다");
         }
-        
+
         userRepository.deleteById(id);
     }
     
